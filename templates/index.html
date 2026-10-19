@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Phishing Link Checker</title>
+<style>
+  :root {
+    --bg: #f7f8fa; --ink: #16202e; --muted: #5d6b7e; --line: #d9dee6;
+    --safe: #1f7a4d; --warn: #b26a00; --bad: #b3261e; --accent: #1d4ed8;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #10151d; --ink: #e8edf4; --muted: #96a3b5; --line: #263041;
+      --safe: #4cc38a; --warn: #f0b24a; --bad: #ff7b72; --accent: #7aa2ff;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font: 17px/1.55 Georgia, "Times New Roman", serif;
+  }
+  main { max-width: 640px; margin: 0 auto; padding: 56px 20px; }
+  h1 { font-size: 2rem; line-height: 1.2; margin: 0 0 8px; }
+  p.lead { color: var(--muted); margin: 0 0 28px; }
+  .row { display: flex; gap: 8px; flex-wrap: wrap; }
+  input {
+    flex: 1 1 260px; padding: 12px 14px; font-size: 1rem;
+    border: 1px solid var(--line); border-radius: 6px;
+    background: transparent; color: var(--ink);
+  }
+  button {
+    padding: 12px 20px; font-size: 1rem; cursor: pointer;
+    border: 0; border-radius: 6px; background: var(--accent); color: #fff;
+  }
+  button:disabled { opacity: .6; cursor: wait; }
+  input:focus-visible, button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+  #result { margin-top: 32px; display: none; border-top: 2px solid var(--line); padding-top: 20px; }
+  #verdict { font-size: 1.8rem; font-weight: bold; margin: 0; }
+  #score { color: var(--muted); margin: 0 0 12px; }
+  ul { padding-left: 20px; margin: 0; }
+  li { margin-bottom: 6px; }
+  .SAFE { color: var(--safe); } .SUSPICIOUS { color: var(--warn); } .PHISHING { color: var(--bad); }
+  footer { margin-top: 48px; color: var(--muted); font-size: .9rem; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Is this link safe to open?</h1>
+  <p class="lead">Paste a URL. The checker scores it on common phishing red flags and shows why.</p>
+  <div class="row">
+    <input id="url" type="text" placeholder="https://example.com/login" aria-label="URL to check" autocomplete="off">
+    <button id="go">Check link</button>
+  </div>
+  <section id="result" aria-live="polite">
+    <p id="verdict"></p>
+    <p id="score"></p>
+    <ul id="reasons"></ul>
+  </section>
+  <footer>Rule-based checker. A clean result does not guarantee a link is safe.</footer>
+</main>
+<script>
+  const input = document.getElementById("url");
+  const btn = document.getElementById("go");
+  async function run() {
+    const url = input.value.trim();
+    if (!url) return;
+    btn.disabled = true; btn.textContent = "Checking...";
+    try {
+      const res = await fetch("/api/check", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({url})
+      });
+      const data = await res.json();
+      const v = document.getElementById("verdict");
+      v.textContent = data.verdict; v.className = data.verdict;
+      document.getElementById("score").textContent = "Score: " + data.score;
+      const list = document.getElementById("reasons");
+      list.innerHTML = "";
+      const items = data.reasons.length ? data.reasons : ["No red flags found"];
+      items.forEach(r => { const li = document.createElement("li"); li.textContent = r; list.appendChild(li); });
+      document.getElementById("result").style.display = "block";
+    } catch (e) {
+      alert("Something went wrong. Try again.");
+    }
+    btn.disabled = false; btn.textContent = "Check link";
+  }
+  btn.addEventListener("click", run);
+  input.addEventListener("keydown", e => { if (e.key === "Enter") run(); });
+</script>
+</body>
+</html>
