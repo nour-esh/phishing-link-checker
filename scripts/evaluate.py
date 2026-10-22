@@ -1,14 +1,3 @@
-"""
-Measure how well the checker works.
-
-Usage:
-    python -m scripts.evaluate      # fast, URL-only rules
-    python -m scripts.evaluate --age  # also uses domain age (slow, one lookup per domain)
-
-Files needed (one URL per line), run from the project root:
-    data/phishing.txt   e.g. from PhishTank / OpenPhish
-    data/legit.txt e.g. top domains from the Tranco list
-"""
 import sys
 
 from detector.checker import check_url
@@ -22,14 +11,14 @@ def load(path):
 
 
 def run(urls):
-    flagged, missed = 0, []
+    flagged, safe = [], []
     for u in urls:
         result = check_url(u, use_age=use_age)
-        if result["verdict"] != "SAFE":
-            flagged += 1
+        if result["verdict"] == "SAFE":
+            safe.append(u)
         else:
-            missed.append(u)
-    return flagged, missed
+            flagged.append((u, result["reasons"]))
+    return flagged, safe
 
 
 phishing = load("data/phishing.txt")
@@ -40,10 +29,14 @@ false_pos, _ = run(legit)
 
 print(f"Mode: {'with domain age' if use_age else 'URL rules only'}")
 print(f"Phishing URLs tested: {len(phishing)}")
-print(f"Detection rate: {caught / len(phishing):.1%}")
+print(f"Detection rate: {len(caught) / len(phishing):.1%}")
 print(f"Legit URLs tested: {len(legit)}")
-print(f"False-positive rate: {false_pos / len(legit):.1%}")
+print(f"False-positive rate: {len(false_pos) / len(legit):.1%}")
 
-print("\nFirst 10 phishing URLs it missed (study these, then add a check):")
+print("\nLegit URLs wrongly flagged:")
+for u, reasons in false_pos:
+    print(" -", u, reasons)
+
+print("\nFirst 10 phishing URLs it missed:")
 for u in missed[:10]:
     print(" -", u)

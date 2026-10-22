@@ -85,7 +85,12 @@
       }             
       const v = document.getElementById("verdict");
       v.textContent = data.verdict; v.className = data.verdict;
-      document.getElementById("score").textContent = "Score: " + data.score;
+            const hints = {
+        SAFE: "No major red flags found.",
+        SUSPICIOUS: "Not proof of phishing. Read the reasons below before trusting this link.",
+        PHISHING: "Several strong red flags. Do not enter any information."
+      };
+      document.getElementById("score").textContent = "Score: " + data.score + " - " + hints[data.verdict];
       const list = document.getElementById("reasons");
       list.innerHTML = "";
       const items = data.reasons.length ? data.reasons : ["No red flags found"];

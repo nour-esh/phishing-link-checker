@@ -9,8 +9,19 @@ import tldextract
 # Use the suffix list bundled with the package (no network call, works on Vercel)
 extract = tldextract.TLDExtract(suffix_list_urls=())
 
-KEYWORDS = ["login", "verify", "secure", "update", "account", "bank", "confirm", "password"]
-BRANDS = ["paypal", "google", "facebook", "microsoft", "apple", "amazon", "netflix", "instagram"]
+KEYWORDS = ["login", "verify", "secure", "update", "account", "bank", "confirm",
+            "password", "auth", "webmail", "track", "signin", "wallet"]
+BRANDS = ["paypal", "google", "facebook", "microsoft", "apple", "amazon", "netflix",
+          "instagram", "roblox", "dhl", "fedex", "dpd"]
+FREE_HOSTS = [
+    "pages.dev", "vercel.app", "netlify.app", "webflow.io", "framer.website",
+    "github.io", "web.app", "firebaseapp.com", "weebly.com", "wixsite.com",
+    "blogspot.com", "glitch.me", "workers.dev", "herokuapp.com", "carrd.co",
+    "gitlab.io", "craftum.io", "4everland.app",
+]
+SHORTENERS = ["bit.ly", "tinyurl.com", "t.co", "goo.gl", "is.gd", "cutt.ly",
+              "rb.gy", "ow.ly", "g5.lu"]
+SUSPICIOUS_TLDS = ["xyz", "shop", "cc", "top", "click", "qpon", "icu", "buzz", "cfd", "sbs"]
 
 _age_cache = {}
 
@@ -100,6 +111,19 @@ def check_url(url, use_age=True):
     if "xn--" in host:
         flag(2, "Punycode (possible lookalike characters)")
 
+    for h in FREE_HOSTS:
+        if host == h or host.endswith("." + h):
+            flag(2, f"Hosted on a free platform ({h})")
+            break
+    if host in SHORTENERS:
+        flag(2, "URL shortener hides the real destination")
+    if host.count("-") >= 3:
+        flag(2, "Many hyphens (looks auto-generated)")
+    if ext.suffix in SUSPICIOUS_TLDS:
+        flag(1, f"Suspicious TLD (.{ext.suffix})")
+    if ext.domain and sum(c.isdigit() for c in ext.domain) / len(ext.domain) > 0.5:
+        flag(1, "Domain is mostly digits")
+
     match = lookalike(ext)
     if match:
         flag(3, match)
@@ -113,7 +137,7 @@ def check_url(url, use_age=True):
         elif age < 180:
             flag(1, f"Fairly new domain ({age} days)")
 
-    verdict = "SAFE" if score <= 1 else "SUSPICIOUS" if score <= 3 else "PHISHING"
+    verdict = "SAFE" if score <= 1 else "SUSPICIOUS" if score <= 4 else "PHISHING"
     return {"url": url, "verdict": verdict, "score": score, "reasons": reasons}
 
 
