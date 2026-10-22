@@ -22,6 +22,21 @@ def normalize(url):
     return url
 
 
+def is_valid_url(url):                              
+    """True only if the input has a real domain (name + suffix) or an IP address."""
+    url = normalize(url)
+    if " " in url:
+        return False
+    try:
+        host = (urlparse(url).hostname or "").lower()
+    except ValueError:
+        return False
+    if re.fullmatch(r"(\d{1,3}\.){3}\d{1,3}", host):
+        return True
+    ext = extract(host)
+    return bool(ext.domain and ext.suffix)          
+
+
 def domain_age_days(domain):
     """Ask RDAP (the modern, HTTP-based WHOIS) when the domain was registered."""
     if domain in _age_cache:

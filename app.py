@@ -1,6 +1,6 @@
 from flask import Flask, jsonify, render_template, request
 
-from detector.checker import check_url
+from detector.checker import check_url, is_valid_url 
 
 app = Flask(__name__)
 
@@ -17,6 +17,8 @@ def api_check():
     url = data.get("url", "").strip()
     if not url or len(url) > 2000:
         return jsonify({"error": "Provide a URL"}), 400
+    if not is_valid_url(url):
+        return jsonify({"error": "That doesn't look like a link. Enter something like example.com/login"}), 400 
     return jsonify(check_url(url))
 
 
